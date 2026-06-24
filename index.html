@@ -1,0 +1,2905 @@
+<!--
+  Depreciation Calculator
+  Author: Antigravity AI
+  Version: 1.0.0
+  Description: A professional depreciation schedule generator supporting SLM, WDV, DDB, SYD, and UOP methods.
+  License: MIT
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Depreciation Calculator & Schedule Generator</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="A professional-grade depreciation calculator for accountants and finance students. Supports SLM, WDV, DDB, SYD, and UOP methods with full scheduling, comparisons, and custom charts.">
+  <meta name="keywords" content="depreciation calculator, straight line method, written down value, double declining balance, sum of years digits, units of production, accounting, asset schedule">
+  
+  <style>
+    /* CSS CUSTOM PROPERTIES FOR LIGHT/DARK MODES */
+    :root {
+      /* Dark mode (default) */
+      --bg-primary: #0D1B2A;
+      --bg-secondary: #1B263B;
+      --surface: #1A2940;
+      --border: #2E3E56;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      
+      --accent: #3B82F6;
+      --accent-hover: #2563EB;
+      --success: #10B981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #F59E0B;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --danger: #EF4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    [data-theme="light"] {
+      /* Light mode overrides */
+      --bg-primary: #F8FAFC;
+      --bg-secondary: #F1F5F9;
+      --surface: #FFFFFF;
+      --border: #E2E8F0;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --success: #059669;
+      --success-bg: rgba(5, 150, 105, 0.08);
+      --warning: #D97706;
+      --warning-bg: rgba(217, 119, 6, 0.08);
+      
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    /* GLOBAL RESET & BASE STYLES */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding: 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-title h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .header-title p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.125rem;
+    }
+
+    /* THEME TOGGLE BUTTON */
+    .theme-toggle-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow);
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--border);
+    }
+
+    .theme-toggle-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* LAYOUT: SIDEBAR AND MAIN CONTENT */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* FORM & INPUTS */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      position: relative;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      color: var(--text-secondary);
+    }
+
+    input, select {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.625rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Error styles */
+    .error-msg {
+      font-size: 0.75rem;
+      color: var(--danger);
+      margin-top: 0.125rem;
+      display: none;
+    }
+
+    /* Action Buttons */
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    button.btn {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: 1px solid transparent;
+      box-shadow: var(--shadow);
+    }
+
+    button.btn-primary {
+      background-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    button.btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    button.btn-secondary {
+      background-color: var(--bg-secondary);
+      border-color: var(--border);
+      color: var(--text-primary);
+    }
+
+    button.btn-secondary:hover {
+      background-color: var(--border);
+    }
+
+    button.btn-accent {
+      background-color: var(--warning-bg);
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+
+    button.btn-accent:hover {
+      background-color: var(--warning);
+      color: #FFFFFF;
+    }
+
+    button.btn-danger {
+      background-color: var(--danger-bg);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    button.btn-danger:hover {
+      background-color: var(--danger);
+      color: #FFFFFF;
+    }
+
+    /* COLLAPSIBLE / DYNAMIC SECTIONS WITH SMOOTH TRANSITIONS */
+    .collapsible-wrapper {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .collapsible-wrapper.show {
+      max-height: 1000px;
+      opacity: 1;
+    }
+
+    /* DYNAMIC UOP INPUTS TABLE */
+    .dynamic-uop-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    .dynamic-uop-table th, .dynamic-uop-table td {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+
+    .dynamic-uop-table th {
+      background-color: var(--bg-secondary);
+      text-align: left;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .dynamic-uop-table input {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    /* RATE FINDER CARD */
+    .rate-finder-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      background-color: var(--bg-secondary);
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .rate-finder-val {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--warning);
+      margin-top: 0.25rem;
+    }
+
+    .rate-finder-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    /* RIGHT COLUMN CONTENT: SUMMARY CARDS */
+    .right-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .summary-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .summary-card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .summary-card-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+
+    .summary-card-value.highlight {
+      color: var(--warning);
+    }
+
+    /* OUTPUT SCHEDULE TABLE */
+    .table-container {
+      overflow-x: auto;
+      max-height: 480px;
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .schedule-table th, .schedule-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    .schedule-table th {
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .schedule-table td.number, .schedule-table th.number {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .schedule-table tbody tr {
+      background-color: var(--surface);
+    }
+
+    .schedule-table tbody tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    [data-theme="light"] .schedule-table tbody tr:nth-child(even) {
+      background-color: rgba(0, 0, 0, 0.015);
+    }
+
+    .schedule-table tbody tr:hover {
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    /* Highlight final row */
+    .schedule-table tbody tr.final-row {
+      background-color: var(--success-bg) !important;
+      border-bottom: 2px solid var(--success);
+    }
+    
+    .schedule-table tbody tr.final-row td {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    /* Total row at bottom */
+    .schedule-table tr.total-row {
+      background-color: var(--bg-secondary) !important;
+      font-weight: 700;
+      border-top: 2px solid var(--border);
+    }
+
+    .schedule-table tr.total-row td {
+      color: var(--text-primary);
+    }
+
+    /* CANVAS COMPARISON CHART CONTAINER */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 320px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .chart-container.show {
+      display: flex;
+    }
+
+    canvas {
+      width: 100%;
+      height: 280px;
+      border-radius: 6px;
+    }
+
+    /* COLLAPSIBLE ACCORDION FOR FORMULA PANEL */
+    .accordion-header {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .accordion-header svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      transition: transform 0.25s ease;
+    }
+
+    .accordion-header.active svg {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease-out;
+      border: 1px solid transparent;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      background: var(--surface);
+    }
+
+    .accordion-content.open {
+      max-height: 600px;
+      border-color: var(--border);
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+
+    .formula-display {
+      font-family: var(--font-mono);
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+      color: var(--warning);
+      font-size: 0.95rem;
+      overflow-x: auto;
+    }
+
+    .formula-vars {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .formula-vars strong {
+      color: var(--text-primary);
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: auto;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* LOADER FOR CALCULATE STATE */
+    .loader-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(13, 27, 42, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      z-index: 100;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left-color: var(--accent);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      body {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        padding: 0;
+        font-size: 11pt;
+      }
+
+      .theme-toggle-btn,
+      .main-layout > .card:first-child, /* inputs */
+      .main-layout > .card:nth-child(2), /* rate finder */
+      .btn-group,
+      .btn-row,
+      .chart-container,
+      .accordion-header,
+      .accordion-content,
+      footer {
+        display: none !important;
+      }
+
+      .main-layout {
+        display: block;
+      }
+
+      .right-content {
+        gap: 20px;
+      }
+
+      .card {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 10px !important;
+      }
+
+      .summary-card {
+        border: 1px solid #CCCCCC !important;
+        box-shadow: none !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        padding: 10px !important;
+      }
+
+      .summary-card-value {
+        color: #000000 !important;
+        font-size: 1.1rem;
+      }
+
+      .table-container {
+        max-height: none !important;
+        overflow: visible !important;
+        border: 1px solid #000000 !important;
+      }
+
+      .schedule-table {
+        page-break-inside: auto;
+      }
+
+      .schedule-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+
+      .schedule-table th {
+        background-color: #EEEEEE !important;
+        color: #000000 !important;
+        border-bottom: 2px solid #000000 !important;
+        position: static !important;
+      }
+
+      .schedule-table td {
+        border-bottom: 1px solid #CCCCCC !important;
+        color: #000000 !important;
+      }
+
+      .schedule-table tbody tr.final-row {
+        background-color: #E2F0D9 !important;
+        border-bottom: 2px solid #385723 !important;
+      }
+
+      .schedule-table tbody tr.final-row td {
+        color: #385723 !important;
+      }
+
+      .schedule-table tr.total-row {
+        background-color: #EEEEEE !important;
+        border-top: 2px solid #000000 !important;
+      }
+
+      .schedule-table tr.total-row td {
+        color: #000000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- APP HEADER -->
+  <header>
+    <div class="header-title">
+      <h1>
+        <svg style="width: 24px; height: 24px; fill: var(--accent)" viewBox="0 0 24 24">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z"/>
+        </svg>
+        <span data-i18n="title">Depreciation Calculator</span>
+      </h1>
+      <p data-i18n="subtitle">Asset depreciation scheduling and comparative analysis system</p>
+    </div>
+    
+    <div style="display: flex; gap: 0.5rem; align-items: center;" class="no-print">
+      <!-- Language Selector -->
+      <select id="lang-selector" style="width: auto; padding: 0.5rem 0.75rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); outline: none;">
+        <option value="en">English</option>
+        <option value="np">नेपाली</option>
+      </select>
+      
+      <!-- Theme Switcher -->
+      <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle dark/light mode">
+        <!-- Sun Icon -->
+        <svg id="sun-icon" viewBox="0 0 24 24">
+          <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1-1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41zm-12.37 12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41z"/>
+        </svg>
+        <!-- Moon Icon -->
+        <svg id="moon-icon" style="display: none;" viewBox="0 0 24 24">
+          <path d="M12.3 22h-.1c-5.5 0-10-4.5-10-10C2.2 6.8 6.5 2.5 12 2.2c.5 0 .8.5.6.9-1.8 2.8-1.5 6.5.9 8.9 2.4 2.4 6.1 2.7 8.9.9.4-.3.9 0 .9.6-.3 5.5-4.6 9.8-10 9.8zm-7.8-10c0 4.3 3.4 7.8 7.7 7.8 3.5 0 6.5-2.3 7.4-5.5-2.9 1-6.1-.1-8.1-2.1-2-2-3.1-5.2-2.1-8.1-3.2.9-5.5 3.9-5.5 7.4z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN APP GRID LAYOUT -->
+  <div class="main-layout">
+    
+    <!-- LEFT COLUMN: INPUTS AND HELPERS -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- INPUT PANEL CARD -->
+      <div class="card">
+        <div class="card-title" data-i18n="asset_inputs">Asset Input Parameters</div>
+        
+        <!-- Asset Name -->
+        <div class="form-group">
+          <label for="asset-name" data-i18n="asset_name">Asset Name</label>
+          <input type="text" id="asset-name" placeholder="e.g., Delivery Truck, Office Server" value="Office Server">
+          <div class="error-msg" id="err-asset-name" data-i18n="err_name">Asset name cannot be empty</div>
+        </div>
+
+        <div class="form-row">
+          <!-- Asset Cost -->
+          <div class="form-group">
+            <label for="asset-cost" data-i18n="original_cost">Original Cost</label>
+            <input type="number" id="asset-cost" step="any" placeholder="e.g., 50000" value="100000">
+            <div class="error-msg" id="err-asset-cost" data-i18n="err_cost">Cost must be greater than 0</div>
+          </div>
+          <!-- Currency Selector -->
+          <div class="form-group">
+            <label for="asset-currency" data-i18n="currency">Currency</label>
+            <select id="asset-currency">
+              <option value="USD">USD ($)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="NPR" selected>NPR (Rs.)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Salvage Value -->
+          <div class="form-group">
+            <label for="asset-salvage" data-i18n="salvage_value">Salvage / Residual Value</label>
+            <input type="number" id="asset-salvage" step="any" placeholder="e.g., 5000" value="10000">
+            <div class="error-msg" id="err-asset-salvage" data-i18n="err_salvage">Salvage must be &ge; 0 and &lt; Cost</div>
+          </div>
+          <!-- Purchase Date -->
+          <div class="form-group">
+            <label for="purchase-date" data-i18n="purchase_date">Purchase Date</label>
+            <input type="date" id="purchase-date" value="2026-06-24">
+            <div class="error-msg" id="err-purchase-date" data-i18n="err_date">Please select a valid date</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Pro-rata Toggle -->
+          <div class="form-group">
+            <label for="pro-rata" data-i18n="pro_rata">Pro-Rata Depreciation</label>
+            <select id="pro-rata">
+              <option value="yes" selected>Yes (Mid-Year Partial)</option>
+              <option value="no">No (Full First Year)</option>
+            </select>
+          </div>
+          <!-- Depreciation Method -->
+          <div class="form-group">
+            <label for="dep-method" data-i18n="dep_method">Depreciation Method</label>
+            <select id="dep-method">
+              <option value="SLM" selected>Straight Line (SLM)</option>
+              <option value="WDV">Written Down Value (WDV)</option>
+              <option value="DDB">Double Declining (DDB)</option>
+              <option value="SYD">Sum of Years Digits (SYD)</option>
+              <option value="UOP">Units of Production (UOP)</option>
+              <option value="NEP_TAX">Nepali Tax (Pool WDV)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- DYNAMIC METHOD-SPECIFIC INPUTS -->
+        
+        <!-- Input Mode (SLM & WDV Only) -->
+        <div class="form-group collapsible-wrapper show" id="input-mode-group">
+          <label for="input-mode" data-i18n="input_mode">Input Mode</label>
+          <select id="input-mode">
+            <option value="life" selected>By Useful Life (Years)</option>
+            <option value="rate">By Rate (%)</option>
+          </select>
+        </div>
+
+        <!-- Rate Input -->
+        <div class="form-group collapsible-wrapper" id="rate-group">
+          <label for="dep-rate" data-i18n="dep_rate">Depreciation Rate (%)</label>
+          <input type="number" id="dep-rate" step="0.01" placeholder="e.g., 20" value="20">
+          <div class="error-msg" id="err-dep-rate" data-i18n="err_rate">Rate must be &gt; 0 and &le; 100</div>
+        </div>
+
+        <!-- Useful Life (SLM, WDV, DDB, SYD) -->
+        <div class="form-group collapsible-wrapper show" id="life-group">
+          <label for="useful-life" id="life-label" data-i18n="useful_life">Useful Life (Years)</label>
+          <input type="number" id="useful-life" min="1" step="1" placeholder="e.g., 5" value="5">
+          <div class="error-msg" id="err-useful-life" data-i18n="err_life">Useful Life must be a positive integer &ge; 1</div>
+        </div>
+
+        <!-- UOP Inputs -->
+        <div class="form-group collapsible-wrapper" id="uop-group">
+          <label for="total-units" data-i18n="total_units">Total Estimated Units</label>
+          <input type="number" id="total-units" step="any" placeholder="e.g., 100000" value="100000">
+          <div class="error-msg" id="err-total-units" data-i18n="err_units">Total units must be greater than 0</div>
+          
+          <label style="margin-top: 0.5rem;" data-i18n="annual_units">Annual Units Produced</label>
+          <div id="uop-warning" style="font-size: 0.75rem; color: var(--warning); display: none; margin-bottom: 0.25rem;" data-i18n="uop_warning">
+            Warning: Sum of annual units does not match Total Estimated Units.
+          </div>
+          <div class="table-container" style="max-height: 180px; margin-top: 0.25rem;">
+            <table class="dynamic-uop-table">
+              <thead>
+                <tr>
+                  <th style="width: 40%" data-i18n="year">Year</th>
+                  <th style="width: 60%" data-i18n="annual_units">Units Used</th>
+                </tr>
+              </thead>
+              <tbody id="uop-inputs-body">
+                <!-- Dynamically generated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Nepali Tax Inputs (Income Tax Act 2058) -->
+        <div class="collapsible-wrapper" id="nep-tax-group">
+          <div class="form-group">
+            <label for="nep-tax-pool" data-i18n="nepali_tax_pool">Nepali Tax Pool Category</label>
+            <select id="nep-tax-pool">
+              <option value="A">Pool A - Buildings (5%)</option>
+              <option value="B" selected>Pool B - Computers, Furniture (25%)</option>
+              <option value="C">Pool C - Vehicles (20%)</option>
+              <option value="D">Pool D - Machinery, Others (15%)</option>
+              <option value="E">Pool E - Intangibles (SLM)</option>
+            </select>
+          </div>
+          
+          <div class="form-group" style="margin-top: 0.75rem;">
+            <label for="nep-tax-period" data-i18n="purchase_period">Purchase Period</label>
+            <select id="nep-tax-period">
+              <option value="1" selected>Shrawan 1 - Poush end (100% Addition)</option>
+              <option value="2">Magh 1 - Chaitra end (2/3 Addition)</option>
+              <option value="3">Baisakh 1 - Ashadh end (1/3 Addition)</option>
+            </select>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;">
+            <input type="checkbox" id="nep-tax-accelerated" style="width: auto; cursor: pointer;">
+            <label for="nep-tax-accelerated" style="cursor: pointer; text-transform: none; font-size: 0.75rem;" data-i18n="accel_dep_label">Entity entitled to 1/3 additional rate (Special Industry, Hydro-power, etc.)</label>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary" id="btn-calculate" data-i18n="calculate">
+            Calculate
+          </button>
+          
+          <div class="btn-row">
+            <button type="button" class="btn btn-accent" id="btn-compare" data-i18n="compare">
+              Compare SLM vs WDV
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-reset" data-i18n="reset">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEPRECIATION RATE FINDER TOOL CARD -->
+      <div class="card">
+        <div class="card-title" data-i18n="quick_rate_finder">Quick Rate Finder</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rf-cost" data-i18n="rf_cost">Asset Cost</label>
+            <input type="number" id="rf-cost" value="100000" placeholder="Cost">
+          </div>
+          <div class="form-group">
+            <label for="rf-salvage" data-i18n="rf_salvage">Salvage</label>
+            <input type="number" id="rf-salvage" value="10000" placeholder="Salvage">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rf-life" data-i18n="rf_life">Useful Life (Years)</label>
+          <input type="number" id="rf-life" value="5" placeholder="Years">
+        </div>
+        
+        <div class="rate-finder-results">
+          <div>
+            <div class="rate-finder-label" data-i18n="rf_slm">SLM Rate</div>
+            <div class="rate-finder-val" id="rf-slm-rate">18.00%</div>
+          </div>
+          <div>
+            <div class="rate-finder-label" data-i18n="rf_wdv">WDV Rate</div>
+            <div class="rate-finder-val" id="rf-wdv-rate">36.90%</div>
+          </div>
+        </div>
+        <div id="rf-warning" style="font-size: 0.7rem; color: var(--warning); display: none; text-align: center;" data-i18n="rf_warning">
+          * Salvage value set to 1 for WDV rate calculation (avoid log(0) error).
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: OUTPUTS -->
+    <div class="right-content">
+      
+      <!-- SUMMARY CARDS -->
+      <div class="summary-grid" id="summary-section">
+        <div class="summary-card">
+          <span class="summary-card-label" data-i18n="sum_cost">Asset Cost</span>
+          <span class="summary-card-value" id="sum-cost">₨ 1,00,000.00</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-card-label" data-i18n="sum_salvage">Salvage Value</span>
+          <span class="summary-card-value" id="sum-salvage">₨ 10,000.00</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-card-label" data-i18n="sum_dep_base">Depreciable Base</span>
+          <span class="summary-card-value highlight" id="sum-dep-base">₨ 90,000.00</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-card-label" data-i18n="sum_method_life">Method / Life</span>
+          <span class="summary-card-value" id="sum-method-life">SLM / 5 Yrs</span>
+        </div>
+      </div>
+
+      <!-- MAIN SCHEDULE AND OUTPUT CARD -->
+      <div class="card" style="position: relative;">
+        <!-- Loading Overlay -->
+        <div class="loader-overlay" id="loader">
+          <div class="spinner"></div>
+        </div>
+
+        <div class="card-title">
+          <span id="output-title" data-i18n="schedule_title">Depreciation Schedule</span>
+          <div style="display: flex; gap: 0.5rem;" class="no-print">
+            <button class="btn btn-secondary" id="btn-export" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;" data-i18n="export_csv">
+              Export CSV
+            </button>
+            <button class="btn btn-secondary" id="btn-export-excel" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;" data-i18n="export_excel">
+              Export Excel
+            </button>
+            <button class="btn btn-secondary" id="btn-print" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;" data-i18n="print">
+              Print
+            </button>
+          </div>
+        </div>
+
+        <!-- CANVAS CHART VIEW -->
+        <div class="chart-container" id="chart-panel">
+          <canvas id="comparison-chart"></canvas>
+        </div>
+
+        <!-- TABLE SECTION -->
+        <div class="table-container">
+          <table class="schedule-table" id="schedule-table">
+            <thead id="table-head">
+              <!-- Dynamically rendered headers -->
+            </thead>
+            <tbody id="table-body">
+              <!-- Dynamically rendered schedule rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ACCORDION FORMULA REFERENCE PANEL -->
+      <div>
+        <div class="accordion-header" id="formula-header">
+          <span data-i18n="formula_ref">Mathematical Formula Reference</span>
+          <svg viewBox="0 0 24 24">
+            <path d="M7 10l5 5 5-5z"/>
+          </svg>
+        </div>
+        <div class="accordion-content" id="formula-content">
+          <div class="formula-display" id="formula-math">
+            Annual Dep = (Cost - Salvage Value) / Useful Life
+          </div>
+          <div class="formula-vars" id="formula-explanation">
+            <!-- Dynamic explanation -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p data-i18n="compliance_note">All calculations are for reference purposes. Consult applicable accounting standards (NFRS/IFRS/GAAP) for compliance.</p>
+    <p style="margin-top: 0.25rem;">&copy; 2026 Depreciation Calculator. MIT License. Self-contained Offline Edition.</p>
+  </footer>
+</div>
+
+<script>
+  /*
+    DEPRECIATION CALCULATOR JAVASCRIPT ENGINE
+  */
+
+  // BILINGUAL TRANSLATION DICTIONARY
+  const translations = {
+    en: {
+      title: "Depreciation Calculator",
+      subtitle: "Asset depreciation scheduling and comparative analysis system",
+      asset_inputs: "Asset Input Parameters",
+      asset_name: "Asset Name",
+      original_cost: "Original Cost",
+      currency: "Currency",
+      salvage_value: "Salvage / Residual Value",
+      purchase_date: "Purchase Date",
+      pro_rata: "Pro-Rata Depreciation",
+      dep_method: "Depreciation Method",
+      input_mode: "Input Mode",
+      useful_life: "Useful Life (Years)",
+      dep_rate: "Depreciation Rate (%)",
+      total_units: "Total Estimated Units",
+      annual_units: "Annual Units Produced",
+      calculate: "Calculate",
+      compare: "Compare SLM vs WDV",
+      reset: "Reset",
+      quick_rate_finder: "Quick Rate Finder",
+      rf_cost: "Asset Cost",
+      rf_salvage: "Salvage",
+      rf_life: "Useful Life (Years)",
+      rf_slm: "SLM Rate",
+      rf_wdv: "WDV Rate",
+      rf_warning: "* Salvage value set to 1 for WDV rate calculation (avoid log(0) error).",
+      sum_cost: "Asset Cost",
+      sum_salvage: "Salvage Value",
+      sum_dep_base: "Depreciable Base",
+      sum_method_life: "Method / Life",
+      schedule_title: "Depreciation Schedule",
+      export_csv: "Export CSV",
+      export_excel: "Export Excel",
+      print: "Print",
+      formula_ref: "Mathematical Formula Reference",
+      compliance_note: "All calculations are for reference purposes. Consult applicable accounting standards (NFRS/IFRS/GAAP) for compliance.",
+      // Nepali Tax Specifics
+      nepali_tax_pool: "Nepali Tax Pool Category",
+      purchase_period: "Purchase Period",
+      accelerated_dep: "Accelerated Depreciation (Additional 1/3 Rate)",
+      pool_a: "Pool A - Buildings (5%)",
+      pool_b: "Pool B - Computers, Furniture (25%)",
+      pool_c: "Pool C - Vehicles (20%)",
+      pool_d: "Pool D - Machinery, Others (15%)",
+      pool_e: "Pool E - Intangibles (SLM)",
+      period_1: "Shrawan - Poush (100% Addition)",
+      period_2: "Magh - Chaitra (2/3 Addition)",
+      period_3: "Baisakh - Ashadh (1/3 Addition)",
+      accel_dep_label: "Entity entitled to 1/3 additional rate (Special Industry, Hydro-power, etc.)",
+      // Table Headers
+      year: "Year",
+      opening_bv: "Opening Book Value",
+      depreciation: "Depreciation",
+      accum_dep: "Accumulated Depreciation",
+      closing_bv: "Closing Book Value",
+      total: "TOTAL",
+      slm_dep: "SLM Depreciation",
+      slm_bv: "SLM Book Value",
+      wdv_dep: "WDV Depreciation",
+      wdv_bv: "WDV Book Value",
+      // Warnings & Errors
+      err_name: "Asset name cannot be empty",
+      err_cost: "Cost must be greater than 0",
+      err_salvage: "Salvage must be &ge; 0 and &lt; Cost",
+      err_date: "Please select a valid date",
+      err_rate: "Rate must be &gt; 0 and &le; 100",
+      err_life: "Useful Life must be a positive integer &ge; 1",
+      err_units: "Total units must be greater than 0",
+      uop_warning: "Warning: Sum of annual units does not match Total Estimated Units."
+    },
+    np: {
+      title: "ह्रासकट्टी क्यालकुलेटर",
+      subtitle: "सम्पत्ति ह्रासकट्टी तालिकीकरण र तुलनात्मक विश्लेषण प्रणाली",
+      asset_inputs: "सम्पत्ति विवरण प्रविष्टि",
+      asset_name: "सम्पत्तिको नाम",
+      original_cost: "प्रारम्भिक लागत",
+      currency: "मुद्रा",
+      salvage_value: "कबाडी मूल्य (Salvage Value)",
+      purchase_date: "खरिद मिति",
+      pro_rata: "दैनिकुपातिक ह्रासकट्टी (Pro-Rata)",
+      dep_method: "ह्रासकट्टी विधि",
+      input_mode: "प्रविष्टि मोड",
+      useful_life: "उपयोगी आयु (वर्ष)",
+      dep_rate: "ह्रासकट्टी दर (%)",
+      total_units: "कुल अनुमानित एकाइ",
+      annual_units: "वार्षिक उत्पादित एकाइ",
+      calculate: "गणना गर्नुहोस्",
+      compare: "SLM र WDV तुलना",
+      reset: "रिसेट गर्नुहोस्",
+      quick_rate_finder: "द्रुत दर खोजकर्ता",
+      rf_cost: "सम्पत्ति लागत",
+      rf_salvage: "कबाडी मूल्य",
+      rf_life: "उपयोगी आयु (वर्ष)",
+      rf_slm: "SLM दर",
+      rf_wdv: "WDV दर",
+      rf_warning: "* WDV दर गणनाका लागि कबाडी मूल्य १ मानिएको छ (log(0) त्रुटिबाट बच्न)।",
+      sum_cost: "सम्पत्ति लागत",
+      sum_salvage: "कबाडी मूल्य",
+      sum_dep_base: "ह्रासकट्टी आधार",
+      sum_method_life: "विधि / आयु",
+      schedule_title: "ह्रासकट्टी तालिका",
+      export_csv: "CSV निर्यात",
+      export_excel: "एक्सेल निर्यात",
+      print: "प्रिन्ट",
+      formula_ref: "गणितीय सूत्र सन्दर्भ",
+      compliance_note: "सबै गणनाहरू सन्दर्भ उद्देश्यका लागि हुन्। अनुपालनका लागि लागू हुने लेखा मापदण्डहरू (NFRS/IFRS/GAAP) हेर्नुहोस्।",
+      // Nepali Tax Specifics
+      nepali_tax_pool: "नेपाली कर समूह (Pool)",
+      purchase_period: "खरिद अवधि",
+      accelerated_dep: "त्वरित ह्रासकट्टी (थप १/३ दर)",
+      pool_a: "समूह क - भवन र संरचना (५%)",
+      pool_b: "समूह ख - कम्प्युटर, फर्निचर र कार्यालय उपकरण (२५%)",
+      pool_c: "समूह ग - सवारी साधनहरू (२०%)",
+      pool_d: "समूह घ - मेसिनरी र अन्य सम्पत्तिहरू (१५%)",
+      pool_e: "समूह ङ - अमूर्त सम्पत्ति (SLM)",
+      period_1: "साउन - पुस (१००% रकम समावेश)",
+      period_2: "माघ - चैत (२/३ रकम समावेश)",
+      period_3: "वैशाख - असार (१/३ रकम समावेश)",
+      accel_dep_label: "थप १/३ दर पाउन योग्य उद्योग (विशेष उद्योग, जलविद्युत आदि)",
+      // Table Headers
+      year: "वर्ष",
+      opening_bv: "सुरुको मौज्दात मूल्य",
+      depreciation: "ह्रासकट्टी रकम",
+      accum_dep: "कुल ह्रासकट्टी रकम",
+      closing_bv: "अन्तिम मौज्दात मूल्य",
+      total: "जम्मा",
+      slm_dep: "SLM ह्रासकट्टी",
+      slm_bv: "SLM बाँकी मूल्य",
+      wdv_dep: "WDV ह्रासकट्टी",
+      wdv_bv: "WDV बाँकी मूल्य",
+      // Warnings & Errors
+      err_name: "सम्पत्तिको नाम खाली हुन सक्दैन",
+      err_cost: "लागत ० भन्दा बढी हुनुपर्छ",
+      err_salvage: "कबाडी मूल्य ० वा बढी र लागत भन्दा कम हुनुपर्छ",
+      err_date: "कृपया वैध मिति चयन गर्नुहोस्",
+      err_rate: "दर ० भन्दा बढी र १०० भन्दा कम वा बराबर हुनुपर्छ",
+      err_life: "उपयोगी आयु १ वा बढी सकारात्मक पूर्णांक हुनुपर्छ",
+      err_units: "कुल एकाइ ० भन्दा बढी हुनुपर्छ",
+      uop_warning: "चेतावनी: वार्षिक एकाइहरूको योगफल कुल एकाइसँग मेल खाँदैन।"
+    }
+  };
+
+  // STATE MANAGEMENT
+  const state = {
+    theme: 'dark',
+    language: 'en',
+    assetName: 'Office Server',
+    cost: 100000,
+    currency: 'NPR',
+    salvage: 10000,
+    purchaseDate: '2026-06-24',
+    proRata: true,
+    method: 'SLM',
+    inputMode: 'life', // 'life' or 'rate'
+    rate: 20,
+    usefulLife: 5,
+    totalUnits: 100000,
+    annualUnits: [], // Units entered per year for UOP
+    results: [],     // Calculation schedule results
+    resultsWDV: []   // For comparison calculations
+  };
+
+  const currencySymbols = {
+    USD: '$',
+    INR: '₹',
+    NPR: 'Rs.',
+    EUR: '€',
+    GBP: '£'
+  };
+
+  // DOM ELEMENTS
+  const el = {
+    themeToggle: document.getElementById('theme-toggle'),
+    langSelector: document.getElementById('lang-selector'),
+    sunIcon: document.getElementById('sun-icon'),
+    moonIcon: document.getElementById('moon-icon'),
+    assetName: document.getElementById('asset-name'),
+    assetCost: document.getElementById('asset-cost'),
+    assetCurrency: document.getElementById('asset-currency'),
+    assetSalvage: document.getElementById('asset-salvage'),
+    purchaseDate: document.getElementById('purchase-date'),
+    proRata: document.getElementById('pro-rata'),
+    depMethod: document.getElementById('dep-method'),
+    inputMode: document.getElementById('input-mode'),
+    depRate: document.getElementById('dep-rate'),
+    usefulLife: document.getElementById('useful-life'),
+    totalUnits: document.getElementById('total-units'),
+    
+    // Toggled Containers
+    inputModeGroup: document.getElementById('input-mode-group'),
+    rateGroup: document.getElementById('rate-group'),
+    lifeGroup: document.getElementById('life-group'),
+    uopGroup: document.getElementById('uop-group'),
+    uopInputsBody: document.getElementById('uop-inputs-body'),
+    uopWarning: document.getElementById('uop-warning'),
+    lifeLabel: document.getElementById('life-label'),
+
+    // Nepali Tax Specific Elements
+    nepTaxPool: document.getElementById('nep-tax-pool'),
+    nepTaxPeriod: document.getElementById('nep-tax-period'),
+    nepTaxAccelerated: document.getElementById('nep-tax-accelerated'),
+    nepTaxGroup: document.getElementById('nep-tax-group'),
+
+    // Action Buttons
+    btnCalculate: document.getElementById('btn-calculate'),
+    btnCompare: document.getElementById('btn-compare'),
+    btnReset: document.getElementById('btn-reset'),
+    btnExport: document.getElementById('btn-export'),
+    btnExportExcel: document.getElementById('btn-export-excel'),
+    btnPrint: document.getElementById('btn-print'),
+
+    // Outputs
+    outputTitle: document.getElementById('output-title'),
+    sumCost: document.getElementById('sum-cost'),
+    sumSalvage: document.getElementById('sum-salvage'),
+    sumDepBase: document.getElementById('sum-dep-base'),
+    sumMethodLife: document.getElementById('sum-method-life'),
+    tableHead: document.getElementById('table-head'),
+    tableBody: document.getElementById('table-body'),
+    loader: document.getElementById('loader'),
+
+    // Canvas Chart
+    chartPanel: document.getElementById('chart-panel'),
+    chartCanvas: document.getElementById('comparison-chart'),
+
+    // Formula Panel
+    formulaHeader: document.getElementById('formula-header'),
+    formulaContent: document.getElementById('formula-content'),
+    formulaMath: document.getElementById('formula-math'),
+    formulaExplanation: document.getElementById('formula-explanation'),
+
+    // Rate Finder
+    rfCost: document.getElementById('rf-cost'),
+    rfSalvage: document.getElementById('rf-salvage'),
+    rfLife: document.getElementById('rf-life'),
+    rfSlmRate: document.getElementById('rf-slm-rate'),
+    rfWdvRate: document.getElementById('rf-wdv-rate'),
+    rfWarning: document.getElementById('rf-warning'),
+
+    // Errors
+    errName: document.getElementById('err-asset-name'),
+    errCost: document.getElementById('err-asset-cost'),
+    errSalvage: document.getElementById('err-asset-salvage'),
+    errDate: document.getElementById('err-purchase-date'),
+    errRate: document.getElementById('err-dep-rate'),
+    errLife: document.getElementById('err-useful-life'),
+    errTotalUnits: document.getElementById('err-total-units')
+  };
+
+  // INITIALIZATION
+  window.addEventListener('DOMContentLoaded', () => {
+    // Theme setup
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+
+    // Language setup
+    const savedLang = localStorage.getItem('language') || 'en';
+    
+    // Initialize inputs based on default state
+    syncFormInputs();
+    updateUOPInputFields();
+    updateRateFinder();
+    
+    // Auto-calculate initial schedule & set language
+    setLanguage(savedLang);
+    
+    // Attach Event Listeners
+    setupEventListeners();
+  });
+
+  // THEME MANAGEMENT
+  function setTheme(theme) {
+    state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    if (theme === 'light') {
+      el.sunIcon.style.display = 'none';
+      el.moonIcon.style.display = 'block';
+    } else {
+      el.sunIcon.style.display = 'block';
+      el.moonIcon.style.display = 'none';
+    }
+    // Re-draw chart on theme change to match line/text styling
+    if (state.results && state.results.length > 0 && el.chartPanel.classList.contains('show')) {
+      drawChart();
+    }
+  }
+
+  // TRANSLATION SETTER
+  function setLanguage(lang) {
+    state.language = lang;
+    localStorage.setItem('language', lang);
+    el.langSelector.value = lang;
+    
+    // 1. Swap data-i18n attributes
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+      const key = element.getAttribute('data-i18n');
+      if (translations[lang] && translations[lang][key]) {
+        element.innerHTML = translations[lang][key];
+      }
+    });
+
+    // 2. Programmatically update method select dropdown options
+    const methodDropdown = el.depMethod;
+    if (methodDropdown) {
+      methodDropdown.options[0].text = lang === 'en' ? 'Straight Line (SLM)' : 'सरल रेखा विधि (SLM)';
+      methodDropdown.options[1].text = lang === 'en' ? 'Written Down Value (WDV)' : 'ह्रासमान मूल्य विधि (WDV)';
+      methodDropdown.options[2].text = lang === 'en' ? 'Double Declining (DDB)' : 'दोहोरो ह्रासमान विधि (DDB)';
+      methodDropdown.options[3].text = lang === 'en' ? 'Sum of Years Digits (SYD)' : 'वर्षका अंकहरूको योग (SYD)';
+      methodDropdown.options[4].text = lang === 'en' ? 'Units of Production (UOP)' : 'उत्पादन एकाइ विधि (UOP)';
+      methodDropdown.options[5].text = lang === 'en' ? 'Nepali Tax (Pool WDV)' : 'नेपाली कर ह्रासकट्टी (Pool WDV)';
+    }
+
+    // 3. Programmatically update pro-rata dropdown options
+    const proRataDropdown = el.proRata;
+    if (proRataDropdown) {
+      proRataDropdown.options[0].text = lang === 'en' ? 'Yes (Mid-Year Partial)' : 'हो (दैनिकुपातिक ह्रासकट्टी)';
+      proRataDropdown.options[1].text = lang === 'en' ? 'No (Full First Year)' : 'होइन (पूर्ण पहिलो वर्ष)';
+    }
+
+    // 4. Programmatically update input mode select
+    const inputModeDropdown = el.inputMode;
+    if (inputModeDropdown) {
+      inputModeDropdown.options[0].text = lang === 'en' ? 'By Useful Life (Years)' : 'उपयोगी आयु द्वारा (वर्ष)';
+      inputModeDropdown.options[1].text = lang === 'en' ? 'By Rate (%)' : 'वार्षिक ह्रासकट्टी दर द्वारा (%)';
+    }
+
+    // 5. Programmatically update currency select options (NPR option)
+    const currencyDropdown = el.assetCurrency;
+    if (currencyDropdown) {
+      currencyDropdown.options[2].text = lang === 'en' ? 'NPR (Rs.)' : 'NPR (रू.)';
+    }
+
+    // 6. Translate Nepali Tax Pool Category select options
+    const poolDropdown = el.nepTaxPool;
+    if (poolDropdown) {
+      poolDropdown.options[0].text = lang === 'en' ? 'Pool A - Buildings (5%)' : 'समूह क - भवन र संरचना (५%)';
+      poolDropdown.options[1].text = lang === 'en' ? 'Pool B - Computers, Furniture (25%)' : 'समूह ख - कम्प्युटर, फर्निचर (२५%)';
+      poolDropdown.options[2].text = lang === 'en' ? 'Pool C - Vehicles (20%)' : 'समूह ग - सवारी साधनहरू (२०%)';
+      poolDropdown.options[3].text = lang === 'en' ? 'Pool D - Machinery, Others (15%)' : 'समूह घ - मेसिनरी र अन्य सम्पत्तिहरू (१५%)';
+      poolDropdown.options[4].text = lang === 'en' ? 'Pool E - Intangibles (SLM)' : 'समूह ङ - अमूर्त सम्पत्ति (SLM)';
+    }
+
+    // 7. Translate Nepali Tax Purchase Period dropdown options
+    const periodDropdown = el.nepTaxPeriod;
+    if (periodDropdown) {
+      periodDropdown.options[0].text = lang === 'en' ? 'Shrawan 1 - Poush end (100% Addition)' : 'साउन १ - पुस मसान्त (१००% रकम समावेश)';
+      periodDropdown.options[1].text = lang === 'en' ? 'Magh 1 - Chaitra end (2/3 Addition)' : 'माघ १ - चैत मसान्त (२/३ रकम समावेश)';
+      periodDropdown.options[2].text = lang === 'en' ? 'Baisakh 1 - Ashadh end (1/3 Addition)' : 'वैशाख १ - असार मसान्त (१/३ रकम समावेश)';
+    }
+
+    // 8. Update placeholders dynamically
+    if (lang === 'en') {
+      el.assetName.placeholder = "e.g., Delivery Truck, Office Server";
+    } else {
+      el.assetName.placeholder = "उदा. डेलिभरी ट्रक, कार्यालय सर्भर";
+    }
+
+    // Re-sync form inputs and labels to refresh text content
+    syncFormInputs();
+    
+    // Re-run calculations to update summary card text and tables in the selected language
+    if (state.results && state.results.length > 0) {
+      if (state.method === 'COMPARISON') {
+        runComparison();
+      } else {
+        runCalculation();
+      }
+    }
+  }
+
+  function setupEventListeners() {
+    // Theme toggle
+    el.themeToggle.addEventListener('click', () => {
+      setTheme(state.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Language toggle
+    el.langSelector.addEventListener('change', (e) => {
+      setLanguage(e.target.value);
+    });
+
+    // Main Dropdowns and Inputs Transitions
+    el.depMethod.addEventListener('change', (e) => {
+      state.method = e.target.value;
+      syncFormInputs();
+      if (state.method === 'UOP') {
+        updateUOPInputFields();
+      }
+      updateFormulaPanel();
+    });
+
+    el.nepTaxPool.addEventListener('change', () => {
+      syncFormInputs();
+      updateFormulaPanel();
+    });
+
+    el.inputMode.addEventListener('change', (e) => {
+      state.inputMode = e.target.value;
+      syncFormInputs();
+    });
+
+    el.usefulLife.addEventListener('input', (e) => {
+      let val = parseInt(e.target.value);
+      if (!isNaN(val) && val >= 1) {
+        state.usefulLife = val;
+        if (state.method === 'UOP') {
+          updateUOPInputFields();
+        }
+      }
+    });
+
+    // Purchase Date changes auto-updates tax periods and uop years
+    el.purchaseDate.addEventListener('change', (e) => {
+      if (state.method === 'UOP') {
+        updateUOPInputFields();
+      }
+      const periodData = getNepaliFiscalPeriod(e.target.value);
+      el.nepTaxPeriod.value = periodData.periodIndex;
+    });
+
+    // Real-Time Rate Finder Listeners
+    const triggerRateFinder = () => {
+      updateRateFinder();
+    };
+    el.rfCost.addEventListener('input', triggerRateFinder);
+    el.rfSalvage.addEventListener('input', triggerRateFinder);
+    el.rfLife.addEventListener('input', triggerRateFinder);
+
+    // Action buttons
+    el.btnCalculate.addEventListener('click', () => {
+      if (validateForm()) {
+        showLoader(() => {
+          el.chartPanel.classList.remove('show');
+          runCalculation();
+          updateFormulaPanel();
+        });
+      }
+    });
+
+    el.btnCompare.addEventListener('click', () => {
+      if (validateForm()) {
+        showLoader(() => {
+          runComparison();
+        });
+      }
+    });
+
+    el.btnReset.addEventListener('click', () => {
+      resetForm();
+    });
+
+    el.btnExport.addEventListener('click', () => {
+      exportCSV();
+    });
+
+    el.btnExportExcel.addEventListener('click', () => {
+      exportExcel();
+    });
+
+    el.btnPrint.addEventListener('click', () => {
+      window.print();
+    });
+
+    // Accordion Toggle
+    el.formulaHeader.addEventListener('click', () => {
+      el.formulaHeader.classList.toggle('active');
+      el.formulaContent.classList.toggle('open');
+    });
+
+    // Resize listener for Canvas Chart
+    window.addEventListener('resize', debounce(() => {
+      if (el.chartPanel.classList.contains('show')) {
+        drawChart();
+      }
+    }, 150));
+  }
+
+  // DEBOUNCE UTILITY
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // DYNAMIC FORM INPUTS VISIBILITY SWITCHER
+  function syncFormInputs() {
+    const method = el.depMethod.value;
+    const mode = el.inputMode.value;
+
+    // Default: hide everything dynamic, then selectively show
+    el.inputModeGroup.classList.remove('show');
+    el.rateGroup.classList.remove('show');
+    el.lifeGroup.classList.remove('show');
+    el.uopGroup.classList.remove('show');
+    el.nepTaxGroup.classList.remove('show');
+    el.proRata.disabled = false;
+
+    if (method === 'SLM' || method === 'WDV') {
+      el.inputModeGroup.classList.add('show');
+      el.lifeLabel.innerText = state.language === 'en' ? "Useful Life (Years)" : "उपयोगी आयु (वर्ष)";
+      if (mode === 'life') {
+        el.lifeGroup.classList.add('show');
+      } else {
+        el.rateGroup.classList.add('show');
+      }
+    } else if (method === 'DDB' || method === 'SYD') {
+      el.lifeLabel.innerText = state.language === 'en' ? "Useful Life (Years)" : "उपयोगी आयु (वर्ष)";
+      el.lifeGroup.classList.add('show');
+    } else if (method === 'UOP') {
+      el.lifeLabel.innerText = state.language === 'en' ? "Production Horizon (Years)" : "उत्पादन अवधि (वर्ष)";
+      el.lifeGroup.classList.add('show');
+      el.uopGroup.classList.add('show');
+      el.proRata.value = "no";
+      el.proRata.disabled = true; // UOP is unit-based, pro-rata doesn't apply
+    } else if (method === 'NEP_TAX') {
+      el.nepTaxGroup.classList.add('show');
+      el.proRata.value = "no";
+      el.proRata.disabled = true; // Nepali Tax uses period factor, standard pro-rata disabled
+      
+      const pool = el.nepTaxPool.value;
+      if (pool === 'E') {
+        el.lifeLabel.innerText = state.language === 'en' ? "Useful Life (Years)" : "उपयोगी आयु (वर्ष)";
+        el.lifeGroup.classList.add('show');
+      }
+    }
+  }
+
+  // UOP DYNAMIC ROW GENERATION
+  function updateUOPInputFields() {
+    const life = parseInt(el.usefulLife.value) || 5;
+    const totalEstUnits = parseFloat(el.totalUnits.value) || 100000;
+    const baseValuePerYear = Math.round(totalEstUnits / life);
+    
+    // Clear and build inputs body
+    el.uopInputsBody.innerHTML = '';
+    
+    // Read previous values if any, to keep data intact
+    const prevValues = [];
+    document.querySelectorAll('.uop-annual-val').forEach(input => {
+      prevValues.push(parseFloat(input.value) || 0);
+    });
+
+    const purchaseVal = el.purchaseDate.value || '2026-06-24';
+    const startYear = parseLocalDate(purchaseVal).getFullYear();
+
+    for (let i = 1; i <= life; i++) {
+      const yearLabel = `Year ${i} (${startYear + i - 1})`;
+      const tr = document.createElement('tr');
+      const val = prevValues[i - 1] !== undefined ? prevValues[i - 1] : baseValuePerYear;
+      
+      tr.innerHTML = `
+        <td>${yearLabel}</td>
+        <td>
+          <input type="number" class="uop-annual-val" data-index="${i-1}" value="${val}" min="0" step="any">
+        </td>
+      `;
+      el.uopInputsBody.appendChild(tr);
+    }
+
+    // Attach listeners to recalculate total validation warning on changes
+    document.querySelectorAll('.uop-annual-val').forEach(input => {
+      input.addEventListener('input', validateUOPTotalUnits);
+    });
+    
+    validateUOPTotalUnits();
+  }
+
+  function validateUOPTotalUnits() {
+    const totalEstUnits = parseFloat(el.totalUnits.value) || 0;
+    let sum = 0;
+    document.querySelectorAll('.uop-annual-val').forEach(input => {
+      sum += parseFloat(input.value) || 0;
+    });
+
+    if (Math.abs(sum - totalEstUnits) > 0.01 && totalEstUnits > 0) {
+      el.uopWarning.style.display = 'block';
+      el.uopWarning.innerText = `Warning: Sum of annual units (${sum.toLocaleString()}) does not match Total Units (${totalEstUnits.toLocaleString()}).`;
+    } else {
+      el.uopWarning.style.display = 'none';
+    }
+  }
+
+  // LOADING EMULATION
+  function showLoader(callback) {
+    el.loader.style.display = 'flex';
+    setTimeout(() => {
+      el.loader.style.display = 'none';
+      callback();
+    }, 350);
+  }
+
+  // INPUT VALIDATION ENGINE
+  function validateForm() {
+    let isValid = true;
+
+    // Reset error messages
+    el.errName.style.display = 'none';
+    el.errCost.style.display = 'none';
+    el.errSalvage.style.display = 'none';
+    el.errDate.style.display = 'none';
+    el.errRate.style.display = 'none';
+    el.errLife.style.display = 'none';
+    el.errTotalUnits.style.display = 'none';
+
+    // 1. Asset Name
+    if (!el.assetName.value.trim()) {
+      el.errName.style.display = 'block';
+      isValid = false;
+    }
+
+    // 2. Asset Cost
+    const cost = parseFloat(el.assetCost.value);
+    if (isNaN(cost) || cost <= 0) {
+      el.errCost.style.display = 'block';
+      isValid = false;
+    }
+
+    // 3. Salvage Value
+    const salvage = parseFloat(el.assetSalvage.value);
+    if (isNaN(salvage) || salvage < 0 || salvage >= cost) {
+      el.errSalvage.style.display = 'block';
+      isValid = false;
+    }
+
+    // 4. Purchase Date
+    if (!el.purchaseDate.value) {
+      el.errDate.style.display = 'block';
+      isValid = false;
+    }
+
+    const method = el.depMethod.value;
+    const mode = el.inputMode.value;
+
+    // 5. Method specific rules
+    if (method === 'SLM' || method === 'WDV') {
+      if (mode === 'rate') {
+        const rate = parseFloat(el.depRate.value);
+        if (isNaN(rate) || rate <= 0 || rate > 100) {
+          el.errRate.style.display = 'block';
+          isValid = false;
+        }
+      } else {
+        const life = parseInt(el.usefulLife.value);
+        if (isNaN(life) || life < 1) {
+          el.errLife.style.display = 'block';
+          isValid = false;
+        }
+      }
+    } else if (method === 'DDB' || method === 'SYD') {
+      const life = parseInt(el.usefulLife.value);
+      if (isNaN(life) || life < 1) {
+        el.errLife.style.display = 'block';
+        isValid = false;
+      }
+    } else if (method === 'UOP') {
+      const totalUnits = parseFloat(el.totalUnits.value);
+      if (isNaN(totalUnits) || totalUnits <= 0) {
+        el.errTotalUnits.style.display = 'block';
+        isValid = false;
+      }
+      const life = parseInt(el.usefulLife.value);
+      if (isNaN(life) || life < 1) {
+        el.errLife.style.display = 'block';
+        isValid = false;
+      }
+    } else if (method === 'NEP_TAX') {
+      const pool = el.nepTaxPool.value;
+      if (pool === 'E') {
+        const life = parseInt(el.usefulLife.value);
+        if (isNaN(life) || life < 1) {
+          el.errLife.style.display = 'block';
+          isValid = false;
+        }
+      }
+    }
+
+    return isValid;
+  }
+
+  // QUICK RATE FINDER CALCULATION
+  function updateRateFinder() {
+    const cost = parseFloat(el.rfCost.value) || 0;
+    const salvage = parseFloat(el.rfSalvage.value) || 0;
+    const life = parseInt(el.rfLife.value) || 0;
+
+    el.rfWarning.style.display = 'none';
+
+    if (cost <= 0 || life < 1 || salvage < 0 || salvage >= cost) {
+      el.rfSlmRate.innerText = '0.00%';
+      el.rfWdvRate.innerText = '0.00%';
+      return;
+    }
+
+    // SLM rate finder
+    const slmRate = ((cost - salvage) / cost) / life * 100;
+    el.rfSlmRate.innerText = slmRate.toFixed(2) + '%';
+
+    // WDV rate finder
+    let usedSalvage = salvage;
+    if (salvage === 0) {
+      usedSalvage = 1; // Safeguard against log(0)
+      el.rfWarning.style.display = 'block';
+    }
+    const wdvRate = (1 - Math.pow(usedSalvage / cost, 1 / life)) * 100;
+    el.rfWdvRate.innerText = wdvRate.toFixed(2) + '%';
+  }
+
+  // RESET FORM
+  function resetForm() {
+    el.assetName.value = 'Office Server';
+    el.assetCost.value = '100000';
+    el.assetCurrency.value = 'NPR';
+    el.assetSalvage.value = '10000';
+    el.purchaseDate.value = '2026-06-24';
+    el.proRata.value = 'yes';
+    el.depMethod.value = 'SLM';
+    el.inputMode.value = 'life';
+    el.depRate.value = '20';
+    el.usefulLife.value = '5';
+    el.totalUnits.value = '100000';
+
+    // Nepali Tax resets
+    el.nepTaxPool.value = 'B';
+    el.nepTaxPeriod.value = '1';
+    el.nepTaxAccelerated.checked = false;
+
+    // Sync views
+    syncFormInputs();
+    updateUOPInputFields();
+    updateRateFinder();
+    
+    // Clear errors
+    const errors = document.querySelectorAll('.error-msg');
+    errors.forEach(e => e.style.display = 'none');
+    
+    el.chartPanel.classList.remove('show');
+    runCalculation();
+    updateFormulaPanel();
+  }
+
+  // MATHEMATICAL HELPERS
+  function parseLocalDate(dateStr) {
+    const parts = dateStr.split('-');
+    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  }
+
+  function getProRataDaysFraction(purchaseDateStr) {
+    const purchase = parseLocalDate(purchaseDateStr);
+    const year = purchase.getFullYear();
+    const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    const daysInYear = isLeap ? 366 : 365;
+
+    const dec31 = new Date(year, 11, 31);
+    const diffTime = Math.abs(dec31 - purchase);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include purchase date
+    
+    return diffDays / daysInYear;
+  }
+
+  function getNepaliFiscalPeriod(gregorianDateStr) {
+    const date = parseLocalDate(gregorianDateStr);
+    const month = date.getMonth(); // 0-indexed (0 = Jan, 6 = Jul, 11 = Dec)
+    const day = date.getDate();
+
+    // Period 1: Shrawan - Poush (July 16 to Jan 14)
+    // Period 2: Magh - Chaitra (Jan 15 to April 13)
+    // Period 3: Baisakh - Ashadh (April 14 to July 15)
+
+    if (month === 6) { // July
+      return day >= 16 ? { factor: 1.0, periodIndex: 1 } : { factor: 1/3, periodIndex: 3 };
+    }
+    if (month > 6 && month <= 11) { // Aug, Sep, Oct, Nov, Dec
+      return { factor: 1.0, periodIndex: 1 };
+    }
+    if (month === 0) { // January
+      return day <= 14 ? { factor: 1.0, periodIndex: 1 } : { factor: 2/3, periodIndex: 2 };
+    }
+    if (month === 1 || month === 2) { // Feb, March
+      return { factor: 2/3, periodIndex: 2 };
+    }
+    if (month === 3) { // April
+      return day <= 13 ? { factor: 2/3, periodIndex: 2 } : { factor: 1/3, periodIndex: 3 };
+    }
+    if (month === 4 || month === 5) { // May, June
+      return { factor: 1/3, periodIndex: 3 };
+    }
+    return { factor: 1.0, periodIndex: 1 }; // Fallback
+  }
+
+  function calculateNepaliTax(cost, poolCategory, periodFactor, acceleratedEnabled, purchaseDateStr) {
+    const schedule = [];
+    const purchaseDate = parseLocalDate(purchaseDateStr);
+    const startYear = purchaseDate.getFullYear();
+    
+    // Rate based on Pool Category
+    let rate = 0.0;
+    if (poolCategory === 'A') rate = 0.05;
+    else if (poolCategory === 'B') rate = 0.25;
+    else if (poolCategory === 'C') rate = 0.20;
+    else if (poolCategory === 'D') rate = 0.15;
+    else if (poolCategory === 'E') {
+      const usefulLife = parseInt(el.usefulLife.value) || 5;
+      rate = 1.0 / usefulLife;
+    }
+    
+    // Accelerated Depreciation (additional 1/3)
+    if (acceleratedEnabled) {
+      rate = rate * (4 / 3);
+    }
+    
+    let bookValue = cost;
+    let accumDep = 0;
+    let year = 1;
+    let calYear = startYear;
+    
+    // For Pools A-D, we stop when WDV is fully written off, limit to 35 periods maximum
+    const maxYears = (poolCategory === 'E') ? (parseInt(el.usefulLife.value) || 5) : 35; 
+    
+    while (bookValue > 0 && year <= maxYears) {
+      let dep = 0;
+      let isLast = (year === maxYears);
+      
+      if (year === 1) {
+        // First year has absorption factor
+        const depBase = bookValue * periodFactor;
+        dep = depBase * rate;
+      } else {
+        if (poolCategory === 'E') {
+          // Pool E is SLM: Cost / UsefulLife
+          dep = cost / (parseInt(el.usefulLife.value) || 5);
+        } else {
+          // WDV for subsequent years
+          dep = bookValue * rate;
+        }
+      }
+      
+      // Nepal tax rule: write off balance if it falls below Rs. 2,000 (or equivalent base unit, 15 USD/EUR/GBP)
+      const threshold = (state.currency === 'NPR' || state.currency === 'INR') ? 2000 : 15;
+      
+      if (bookValue - dep < threshold || isLast) {
+        dep = bookValue; // write off everything
+        isLast = true;
+      }
+      
+      accumDep += dep;
+      const closing = bookValue - dep;
+      
+      // Determine Fiscal Year Labels
+      // In Nepal, the fiscal year starts in Shrawan (July) and ends in Ashadh (July next year).
+      // Label year: e.g. FY 2082/83
+      const nextYearTwoDigits = ((calYear + 1) % 100).toString().padStart(2, '0');
+      const yearLabel = state.language === 'en' 
+        ? `Year ${year} (FY ${calYear}/${nextYearTwoDigits})`
+        : `वर्ष ${year} (आ.व. ${calYear}/${nextYearTwoDigits})`;
+      
+      schedule.push({
+        year: yearLabel,
+        opening: bookValue,
+        depreciation: dep,
+        accumulated: accumDep,
+        closing: closing,
+        isFinal: isLast
+      });
+      
+      bookValue = closing;
+      if (isLast) break;
+      
+      year++;
+      calYear++;
+    }
+    
+    return schedule;
+  }
+
+  function exportExcel() {
+    const results = state.results;
+    if (!results || results.length === 0) return;
+    
+    const isNepali = state.language === 'np';
+    
+    // Choose table header names in current language
+    const headers = isNepali ? {
+      year: "वर्ष",
+      opening: "सुरुको मौज्दात मूल्य",
+      depreciation: "ह्रासकट्टी रकम",
+      accumulated: "कुल ह्रासकट्टी रकम",
+      closing: "अन्तिम मौज्दात मूल्य",
+      slm_dep: "SLM ह्रासकट्टी",
+      slm_bv: "SLM बाँकी मूल्य",
+      wdv_dep: "WDV ह्रासकट्टी",
+      wdv_bv: "WDV बाँकी मूल्य"
+    } : {
+      year: "Year",
+      opening: "Opening Book Value",
+      depreciation: "Depreciation",
+      accumulated: "Accumulated Depreciation",
+      closing: "Closing Book Value",
+      slm_dep: "SLM Depreciation",
+      slm_bv: "SLM Book Value",
+      wdv_dep: "WDV Depreciation",
+      wdv_bv: "WDV Book Value"
+    };
+
+    let tableHeadHTML = "";
+    let tableBodyHTML = "";
+
+    if (state.method === 'COMPARISON') {
+      tableHeadHTML = `
+        <tr>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px;">${headers.year}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.slm_dep}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.slm_bv}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.wdv_dep}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.wdv_bv}</th>
+        </tr>
+      `;
+
+      const maxYears = Math.max(state.results.length, state.resultsWDV.length);
+      let slmTotal = 0;
+      let wdvTotal = 0;
+      for (let i = 0; i < maxYears; i++) {
+        const sRow = state.results[i] || { depreciation: 0, closing: state.salvage, year: `Year ${i+1}` };
+        const wRow = state.resultsWDV[i] || { depreciation: 0, closing: state.salvage, year: `Year ${i+1}` };
+        slmTotal += sRow.depreciation;
+        wdvTotal += wRow.depreciation;
+
+        const rowStyle = (i === maxYears - 1) ? 'font-weight: bold; background-color: #D1FAE5; color: #065F46;' : '';
+        const yearLabel = state.results[i] ? sRow.year : wRow.year;
+
+        tableBodyHTML += `
+          <tr style="${rowStyle}">
+            <td style="border: 1px solid #E2E8F0; padding: 6px;">${yearLabel}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(sRow.depreciation)}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(sRow.closing)}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(wRow.depreciation)}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(wRow.closing)}</td>
+          </tr>
+        `;
+      }
+      // total row
+      tableBodyHTML += `
+        <tr style="font-weight: bold; background-color: #F1F5F9;">
+          <td style="border: 1px solid #E2E8F0; padding: 6px;">${isNepali ? 'जम्मा' : 'TOTAL'}</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(slmTotal)}</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">-</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(wdvTotal)}</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">-</td>
+        </tr>
+      `;
+
+    } else {
+      tableHeadHTML = `
+        <tr>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px;">${headers.year}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.opening}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.depreciation}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.accumulated}</th>
+          <th style="background-color: #3B82F6; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 6px; text-align: right;">${headers.closing}</th>
+        </tr>
+      `;
+
+      let totalDep = 0;
+      results.forEach(row => {
+        totalDep += row.depreciation;
+        const rowStyle = row.isFinal ? 'font-weight: bold; background-color: #D1FAE5; color: #065F46;' : '';
+        tableBodyHTML += `
+          <tr style="${rowStyle}">
+            <td style="border: 1px solid #E2E8F0; padding: 6px;">${row.year}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(row.opening)}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(row.depreciation)}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(row.accumulated)}</td>
+            <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(row.closing)}</td>
+          </tr>
+        `;
+      });
+      // total row
+      tableBodyHTML += `
+        <tr style="font-weight: bold; background-color: #F1F5F9;">
+          <td style="border: 1px solid #E2E8F0; padding: 6px;">${isNepali ? 'जम्मा' : 'TOTAL'}</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">-</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(totalDep)}</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">${formatCurrency(totalDep)}</td>
+          <td style="border: 1px solid #E2E8F0; padding: 6px; text-align: right;">-</td>
+        </tr>
+      `;
+    }
+
+    const titleStr = isNepali ? "ह्रासकट्टी गणना विवरण" : "Depreciation Schedule";
+    
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Depreciation Sheet</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+      </head>
+      <body style="font-family: -apple-system, Segoe UI, sans-serif; padding: 20px;">
+        <h2 style="color: #0D1B2A;">${titleStr} - ${state.assetName}</h2>
+        <table style="border-collapse: collapse; margin-top: 15px;">
+          <thead>
+            ${tableHeadHTML}
+          </thead>
+          <tbody>
+            ${tableBodyHTML}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+    
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const sanitizedAssetName = state.assetName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${sanitizedAssetName}_${state.method}_schedule.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // CALCULATION CONTROLLERS AND MATHEMATICAL METHODS
+
+  function calculateSLM(cost, salvage, life, rate, inputMode, proRataEnabled, purchaseDateStr) {
+    const schedule = [];
+    const purchaseDate = parseLocalDate(purchaseDateStr);
+    const startYear = purchaseDate.getFullYear();
+    const fraction = proRataEnabled ? getProRataDaysFraction(purchaseDateStr) : 1.0;
+    
+    let bookValue = cost;
+    let accumDep = 0;
+    const depBase = cost - salvage;
+
+    let annualDep = 0;
+    if (inputMode === 'rate') {
+      annualDep = cost * (rate / 100);
+    } else {
+      annualDep = depBase / life;
+    }
+
+    let year = 1;
+    let calYear = startYear;
+
+    while (bookValue > salvage) {
+      let isLast = false;
+      let currentFraction = 1.0;
+
+      if (year === 1) {
+        currentFraction = fraction;
+      } else if (inputMode === 'life' && year === life + 1 && fraction < 1.0) {
+        currentFraction = 1.0 - fraction;
+        isLast = true;
+      } else if (inputMode === 'life' && year === life && fraction === 1.0) {
+        isLast = true;
+      }
+
+      let dep = annualDep * currentFraction;
+      
+      // Clamp dep to make sure book value doesn't go below salvage
+      if (bookValue - dep <= salvage || (inputMode === 'life' && year >= life + (fraction < 1.0 ? 1 : 0))) {
+        dep = bookValue - salvage;
+        isLast = true;
+      }
+
+      accumDep += dep;
+      const closing = bookValue - dep;
+
+      schedule.push({
+        year: `Year ${year} (${calYear})`,
+        opening: bookValue,
+        depreciation: dep,
+        accumulated: accumDep,
+        closing: closing,
+        isFinal: isLast
+      });
+
+      bookValue = closing;
+      if (isLast) break;
+
+      year++;
+      calYear++;
+    }
+
+    return schedule;
+  }
+
+  function calculateWDV(cost, salvage, life, rate, inputMode, proRataEnabled, purchaseDateStr) {
+    const schedule = [];
+    const purchaseDate = parseLocalDate(purchaseDateStr);
+    const startYear = purchaseDate.getFullYear();
+    const fraction = proRataEnabled ? getProRataDaysFraction(purchaseDateStr) : 1.0;
+
+    let bookValue = cost;
+    let accumDep = 0;
+    let wdvRate = 0;
+
+    if (inputMode === 'rate') {
+      wdvRate = rate / 100;
+    } else {
+      let usedSalvage = salvage;
+      if (salvage === 0) {
+        usedSalvage = 1; // Safeguard against log(0)
+      }
+      wdvRate = 1 - Math.pow(usedSalvage / cost, 1 / life);
+    }
+
+    let year = 1;
+    let calYear = startYear;
+    const totalMaxYears = inputMode === 'life' ? (life + (fraction < 1.0 ? 1 : 0)) : 100; // safety ceiling
+
+    while (bookValue > salvage && year <= totalMaxYears) {
+      let isLast = false;
+      let currentFraction = 1.0;
+
+      if (year === 1) {
+        currentFraction = fraction;
+      }
+
+      // If we are in useful life mode, final year drops the remaining book value exactly to salvage
+      if (inputMode === 'life' && year === totalMaxYears) {
+        isLast = true;
+      }
+
+      let dep = 0;
+      if (isLast) {
+        dep = bookValue - salvage;
+      } else {
+        dep = bookValue * wdvRate * currentFraction;
+      }
+
+      // Clamp checks
+      if (bookValue - dep <= salvage) {
+        dep = bookValue - salvage;
+        isLast = true;
+      }
+
+      accumDep += dep;
+      const closing = bookValue - dep;
+
+      schedule.push({
+        year: `Year ${year} (${calYear})`,
+        opening: bookValue,
+        depreciation: dep,
+        accumulated: accumDep,
+        closing: closing,
+        isFinal: isLast
+      });
+
+      bookValue = closing;
+      if (isLast) break;
+
+      year++;
+      calYear++;
+    }
+
+    return schedule;
+  }
+
+  function calculateDDB(cost, salvage, life, proRataEnabled, purchaseDateStr) {
+    const schedule = [];
+    const purchaseDate = parseLocalDate(purchaseDateStr);
+    const startYear = purchaseDate.getFullYear();
+    const fraction = proRataEnabled ? getProRataDaysFraction(purchaseDateStr) : 1.0;
+
+    let bookValue = cost;
+    let accumDep = 0;
+    const ddbRate = 2 / life;
+
+    let year = 1;
+    let calYear = startYear;
+    const totalMaxYears = life + (fraction < 1.0 ? 1 : 0);
+    let switched = false;
+
+    while (bookValue > salvage && year <= totalMaxYears) {
+      let isLast = (year === totalMaxYears);
+      let currentFraction = (year === 1) ? fraction : 1.0;
+
+      // Compute standard DDB depreciation
+      let ddbDep = bookValue * ddbRate * currentFraction;
+
+      // Compute SLM remaining depreciation
+      let remainingLife = life;
+      if (year > 1) {
+        remainingLife = life - fraction - (year - 2);
+      }
+      
+      let slmDep = (bookValue - salvage) / remainingLife;
+      if (remainingLife <= 1 && fraction < 1.0 && year === totalMaxYears) {
+        slmDep = bookValue - salvage;
+      }
+
+      let dep = 0;
+      let labelSuffix = '';
+
+      if (slmDep > ddbDep || switched) {
+        switched = true;
+        dep = slmDep;
+        labelSuffix = ' (SLM Switch)';
+      } else {
+        dep = ddbDep;
+      }
+
+      if (isLast || bookValue - dep <= salvage) {
+        dep = bookValue - salvage;
+        isLast = true;
+      }
+
+      accumDep += dep;
+      const closing = bookValue - dep;
+
+      schedule.push({
+        year: `Year ${year} (${calYear})${labelSuffix}`,
+        opening: bookValue,
+        depreciation: dep,
+        accumulated: accumDep,
+        closing: closing,
+        isFinal: isLast
+      });
+
+      bookValue = closing;
+      if (isLast) break;
+
+      year++;
+      calYear++;
+    }
+
+    return schedule;
+  }
+
+  function calculateSYD(cost, salvage, life, proRataEnabled, purchaseDateStr) {
+    const schedule = [];
+    const purchaseDate = parseLocalDate(purchaseDateStr);
+    const startYear = purchaseDate.getFullYear();
+    const fraction = proRataEnabled ? getProRataDaysFraction(purchaseDateStr) : 1.0;
+
+    let bookValue = cost;
+    let accumDep = 0;
+    const depBase = cost - salvage;
+
+    const sydSum = (life * (life + 1)) / 2;
+
+    // Precalculate asset year allocations
+    const assetYearDeps = [];
+    for (let j = 1; j <= life; j++) {
+      assetYearDeps.push(depBase * (life - j + 1) / sydSum);
+    }
+
+    let year = 1;
+    let calYear = startYear;
+    const totalMaxYears = life + (fraction < 1.0 ? 1 : 0);
+
+    while (bookValue > salvage && year <= totalMaxYears) {
+      let dep = 0;
+      let isLast = (year === totalMaxYears);
+
+      if (fraction === 1.0) {
+        // Standard SYD
+        dep = assetYearDeps[year - 1] || 0;
+      } else {
+        // Pro-rata SYD (Split allocation across calendar years)
+        const f = fraction;
+        if (year === 1) {
+          dep = assetYearDeps[0] * f;
+        } else if (year === totalMaxYears) {
+          dep = assetYearDeps[life - 1] * (1.0 - f);
+        } else {
+          dep = (assetYearDeps[year - 2] * (1.0 - f)) + (assetYearDeps[year - 1] * f);
+        }
+      }
+
+      if (isLast || bookValue - dep <= salvage) {
+        dep = bookValue - salvage;
+        isLast = true;
+      }
+
+      accumDep += dep;
+      const closing = bookValue - dep;
+
+      schedule.push({
+        year: `Year ${year} (${calYear})`,
+        opening: bookValue,
+        depreciation: dep,
+        accumulated: accumDep,
+        closing: closing,
+        isFinal: isLast
+      });
+
+      bookValue = closing;
+      if (isLast) break;
+
+      year++;
+      calYear++;
+    }
+
+    return schedule;
+  }
+
+  function calculateUOP(cost, salvage, totalUnits, annualUnitsArray, purchaseDateStr) {
+    const schedule = [];
+    const purchaseDate = parseLocalDate(purchaseDateStr);
+    const startYear = purchaseDate.getFullYear();
+
+    let bookValue = cost;
+    let accumDep = 0;
+    const ratePerUnit = (cost - salvage) / totalUnits;
+    const life = annualUnitsArray.length;
+
+    for (let i = 0; i < life; i++) {
+      const unitsUsed = annualUnitsArray[i];
+      let dep = unitsUsed * ratePerUnit;
+      let isLast = (i === life - 1);
+
+      if (bookValue - dep <= salvage || isLast) {
+        dep = bookValue - salvage;
+        isLast = true;
+      }
+
+      accumDep += dep;
+      const closing = bookValue - dep;
+
+      schedule.push({
+        year: `Year ${i+1} (${startYear + i})`,
+        opening: bookValue,
+        depreciation: dep,
+        accumulated: accumDep,
+        closing: closing,
+        isFinal: isLast || closing <= salvage
+      });
+
+      bookValue = closing;
+      if (closing <= salvage) break;
+    }
+
+    return schedule;
+  }
+
+  // DYNAMIC CALCULATE ROUTINE
+  function runCalculation() {
+    // Read input data
+    const cost = parseFloat(el.assetCost.value);
+    const salvage = parseFloat(el.assetSalvage.value);
+    const method = el.depMethod.value;
+    const mode = el.inputMode.value;
+    const rate = parseFloat(el.depRate.value);
+    const life = parseInt(el.usefulLife.value);
+    const totalUnits = parseFloat(el.totalUnits.value);
+    const proRataEnabled = el.proRata.value === 'yes';
+    const purchaseDateStr = el.purchaseDate.value;
+
+    state.cost = cost;
+    state.salvage = salvage;
+    state.method = method;
+    state.currency = el.assetCurrency.value;
+
+    let results = [];
+
+    if (method === 'SLM') {
+      results = calculateSLM(cost, salvage, life, rate, mode, proRataEnabled, purchaseDateStr);
+    } else if (method === 'WDV') {
+      results = calculateWDV(cost, salvage, life, rate, mode, proRataEnabled, purchaseDateStr);
+    } else if (method === 'DDB') {
+      results = calculateDDB(cost, salvage, life, proRataEnabled, purchaseDateStr);
+    } else if (method === 'SYD') {
+      results = calculateSYD(cost, salvage, life, proRataEnabled, purchaseDateStr);
+    } else if (method === 'UOP') {
+      const annualUnits = [];
+      document.querySelectorAll('.uop-annual-val').forEach(input => {
+        annualUnits.push(parseFloat(input.value) || 0);
+      });
+      state.annualUnits = annualUnits;
+      results = calculateUOP(cost, salvage, totalUnits, annualUnits, purchaseDateStr);
+    }
+
+    state.results = results;
+    el.outputTitle.innerText = `Depreciation Schedule (${method})`;
+    
+    // Update summary cards
+    renderSummaryCards(cost, salvage, method, life, results);
+
+    // Render table
+    renderScheduleTable(results);
+  }
+
+  // DYNAMIC COMPARISON ROUTINE
+  function runComparison() {
+    const cost = parseFloat(el.assetCost.value);
+    const salvage = parseFloat(el.assetSalvage.value);
+    const life = parseInt(el.usefulLife.value);
+    const proRataEnabled = el.proRata.value === 'yes';
+    const purchaseDateStr = el.purchaseDate.value;
+
+    state.cost = cost;
+    state.salvage = salvage;
+    state.method = 'COMPARISON';
+    state.currency = el.assetCurrency.value;
+
+    // Run both calculations (always using Life mode for parity comparison)
+    const slmResults = calculateSLM(cost, salvage, life, 0, 'life', proRataEnabled, purchaseDateStr);
+    const wdvResults = calculateWDV(cost, salvage, life, 0, 'life', proRataEnabled, purchaseDateStr);
+
+    state.results = slmResults;
+    state.resultsWDV = wdvResults;
+
+    el.outputTitle.innerText = `Depreciation Comparison (SLM vs WDV)`;
+
+    // Update Summary cards (using SLM as reference)
+    renderSummaryCards(cost, salvage, 'SLM vs WDV', life, slmResults);
+
+    // Render Comparison Table
+    renderComparisonTable(slmResults, wdvResults);
+
+    // Draw Chart
+    el.chartPanel.classList.add('show');
+    drawChart();
+  }
+
+  // RENDER SUMMARY CARDS
+  function renderSummaryCards(cost, salvage, method, life, results) {
+    el.sumCost.innerText = formatCurrency(cost);
+    el.sumSalvage.innerText = formatCurrency(salvage);
+    
+    const depBase = cost - salvage;
+    el.sumDepBase.innerText = formatCurrency(depBase);
+
+    // Compute effective life actually generated
+    const actualYears = results.length;
+    el.sumMethodLife.innerText = `${method} / ${actualYears} Yr${actualYears > 1 ? 's' : ''}`;
+  }
+
+  // RENDER STANDARD SCHEDULE TABLE
+  function renderScheduleTable(results) {
+    // Build headers
+    el.tableHead.innerHTML = `
+      <tr>
+        <th>Year</th>
+        <th class="number">Opening Book Value</th>
+        <th class="number">Depreciation</th>
+        <th class="number">Accumulated Depreciation</th>
+        <th class="number">Closing Book Value</th>
+      </tr>
+    `;
+
+    // Build rows
+    el.tableBody.innerHTML = '';
+    let totalDep = 0;
+
+    results.forEach(row => {
+      totalDep += row.depreciation;
+      const tr = document.createElement('tr');
+      if (row.isFinal) {
+        tr.classList.add('final-row');
+      }
+
+      tr.innerHTML = `
+        <td>${row.year}</td>
+        <td class="number">${formatCurrency(row.opening)}</td>
+        <td class="number">${formatCurrency(row.depreciation)}</td>
+        <td class="number">${formatCurrency(row.accumulated)}</td>
+        <td class="number">${formatCurrency(row.closing)}</td>
+      `;
+      el.tableBody.appendChild(tr);
+    });
+
+    // Append total row
+    const totalRow = document.createElement('tr');
+    totalRow.classList.add('total-row');
+    totalRow.innerHTML = `
+      <td>TOTAL</td>
+      <td class="number">-</td>
+      <td class="number">${formatCurrency(totalDep)}</td>
+      <td class="number">${formatCurrency(totalDep)}</td>
+      <td class="number">-</td>
+    `;
+    el.tableBody.appendChild(totalRow);
+  }
+
+  // RENDER SIDE-BY-SIDE COMPARISON TABLE
+  function renderComparisonTable(slm, wdv) {
+    el.tableHead.innerHTML = `
+      <tr>
+        <th>Year</th>
+        <th class="number">SLM Depreciation</th>
+        <th class="number">SLM Book Value</th>
+        <th class="number">WDV Depreciation</th>
+        <th class="number">WDV Book Value</th>
+      </tr>
+    `;
+
+    el.tableBody.innerHTML = '';
+    const maxYears = Math.max(slm.length, wdv.length);
+    let slmTotal = 0;
+    let wdvTotal = 0;
+
+    for (let i = 0; i < maxYears; i++) {
+      const sRow = slm[i] || { depreciation: 0, closing: state.salvage, year: `Year ${i+1}` };
+      const wRow = wdv[i] || { depreciation: 0, closing: state.salvage, year: `Year ${i+1}` };
+
+      slmTotal += sRow.depreciation;
+      wdvTotal += wRow.depreciation;
+
+      const tr = document.createElement('tr');
+      // Highlight final year if it is the absolute final row of both
+      if (i === maxYears - 1) {
+        tr.classList.add('final-row');
+      }
+
+      const yearLabel = slm[i] ? sRow.year : wRow.year;
+
+      tr.innerHTML = `
+        <td>${yearLabel}</td>
+        <td class="number">${formatCurrency(sRow.depreciation)}</td>
+        <td class="number">${formatCurrency(sRow.closing)}</td>
+        <td class="number">${formatCurrency(wRow.depreciation)}</td>
+        <td class="number">${formatCurrency(wRow.closing)}</td>
+      `;
+      el.tableBody.appendChild(tr);
+    }
+
+    // Total row
+    const totalRow = document.createElement('tr');
+    totalRow.classList.add('total-row');
+    totalRow.innerHTML = `
+      <td>TOTAL</td>
+      <td class="number">${formatCurrency(slmTotal)}</td>
+      <td class="number">-</td>
+      <td class="number">${formatCurrency(wdvTotal)}</td>
+      <td class="number">-</td>
+    `;
+    el.tableBody.appendChild(totalRow);
+  }
+
+  // UTILITY FOR CURRENCY FORMATTING
+  function formatCurrency(val) {
+    const currency = state.currency;
+    const isNepali = state.language === 'np';
+    
+    let symbol = '$';
+    if (currency === 'USD') symbol = '$';
+    else if (currency === 'EUR') symbol = '€';
+    else if (currency === 'GBP') symbol = '£';
+    else if (currency === 'INR') symbol = '₹';
+    else if (currency === 'NPR') {
+      symbol = isNepali ? 'रू.' : 'Rs.';
+    }
+
+    const numVal = Number(val);
+    const isNegative = numVal < 0;
+    const absVal = Math.abs(numVal);
+    
+    let formattedStr = '';
+    if (currency === 'NPR' || currency === 'INR') {
+      // Format using South Asian Lakhs/Crores grouping
+      const parts = absVal.toFixed(2).split('.');
+      let lastThree = parts[0].substring(parts[0].length - 3);
+      const otherParts = parts[0].substring(0, parts[0].length - 3);
+      let formattedInteger = parts[0];
+      if (otherParts !== '') {
+        formattedInteger = otherParts.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + ',' + lastThree;
+      }
+      formattedStr = `${formattedInteger}.${parts[1]}`;
+    } else {
+      // Format using standard international grouping
+      formattedStr = absVal.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+    
+    return isNegative ? `-${symbol} ${formattedStr}` : `${symbol} ${formattedStr}`;
+  }
+
+  // NATIVE CANVAS CHART ENGINE (ZERO CDN DEPENDENCIES)
+  function drawChart() {
+    const slm = state.results || [];
+    const wdv = state.resultsWDV || [];
+    if (slm.length === 0 && wdv.length === 0) return;
+
+    const canvas = el.chartCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Handle high DPI screens
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const height = rect.height;
+
+    // Theme responsive chart colors
+    const isDark = state.theme === 'dark';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+    const textColor = isDark ? '#94A3B8' : '#475569';
+    const axisColor = isDark ? '#2E3E56' : '#CBD5E1';
+
+    // Chart Lines Colors
+    const slmColor = '#3B82F6'; // Electric Blue
+    const wdvColor = '#F59E0B'; // Amber
+
+    // Clear Canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Padding settings
+    const padding = { top: 30, right: 120, bottom: 40, left: 65 };
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+
+    // Extents
+    const maxVal = state.cost;
+    const minVal = state.salvage;
+    const totalPoints = Math.max(slm.length, wdv.length) + 1; // include year 0 (original cost)
+
+    // Helper functions for mapping values to coordinates
+    const getX = (index) => padding.left + (index / (totalPoints - 1)) * plotWidth;
+    const getY = (val) => padding.top + plotHeight - ((val - minVal) / (maxVal - minVal)) * plotHeight;
+
+    // 1. Draw Grid Lines & Y-axis labels
+    const yTicks = 5;
+    ctx.strokeStyle = gridColor;
+    ctx.fillStyle = textColor;
+    ctx.font = '10px -apple-system, Segoe UI, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'right';
+
+    for (let i = 0; i <= yTicks; i++) {
+      const val = minVal + (i / yTicks) * (maxVal - minVal);
+      const y = getY(val);
+      
+      // Draw grid line
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+
+      // Draw label
+      const currencySymbol = currencySymbols[state.currency] || '$';
+      const kVal = val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0);
+      ctx.fillText(`${currencySymbol}${kVal}`, padding.left - 10, y);
+    }
+
+    // 2. Draw X-axis ticks & labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const getYearNumber = (label) => {
+      const match = label.match(/\((\d{4})\)/);
+      return match ? match[1] : '';
+    };
+
+    // Include Year 0
+    const startYear = parseLocalDate(el.purchaseDate.value).getFullYear();
+    ctx.fillText(`${startYear}`, getX(0), padding.top + plotHeight + 10);
+    
+    // Draw Year labels on X axis
+    const stepSize = Math.max(1, Math.floor(totalPoints / 10)); // prevent overcrowding
+    for (let i = 1; i < totalPoints; i++) {
+      if (i % stepSize === 0 || i === totalPoints - 1) {
+        const item = slm[i - 1] || wdv[i - 1];
+        const label = item ? getYearNumber(item.year) : '';
+        ctx.fillText(label, getX(i), padding.top + plotHeight + 10);
+      }
+    }
+
+    // 3. Draw Axes borders
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, padding.top + plotHeight);
+    ctx.lineTo(width - padding.right, padding.top + plotHeight);
+    ctx.stroke();
+
+    // 4. Data Arrays including original Cost at index 0
+    const slmPoints = [state.cost, ...slm.map(r => r.closing)];
+    const wdvPoints = [state.cost, ...wdv.map(r => r.closing)];
+
+    // 5. Draw Lines
+    const drawLine = (points, color) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(getX(0), getY(points[0]));
+
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(getX(i), getY(points[i]));
+      }
+      ctx.stroke();
+
+      // Draw markers
+      ctx.fillStyle = color;
+      for (let i = 0; i < points.length; i++) {
+        ctx.beginPath();
+        ctx.arc(getX(i), getY(points[i]), 5, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Inner white dot for premium aesthetic
+        ctx.fillStyle = isDark ? '#1A2940' : '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(getX(i), getY(points[i]), 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = color; // restore
+      }
+    };
+
+    drawLine(slmPoints, slmColor);
+    drawLine(wdvPoints, wdvColor);
+
+    // 6. Draw Chart Legend (Right sidebar style inside canvas)
+    const legendX = width - padding.right + 20;
+    const legendY = padding.top + 10;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 10px -apple-system, Segoe UI, sans-serif';
+
+    // SLM Legend
+    ctx.fillStyle = slmColor;
+    ctx.fillRect(legendX, legendY, 15, 8);
+    ctx.fillStyle = textColor;
+    ctx.fillText('SLM Book Value', legendX + 22, legendY + 4);
+
+    // WDV Legend
+    ctx.fillStyle = wdvColor;
+    ctx.fillRect(legendX, legendY + 20, 15, 8);
+    ctx.fillStyle = textColor;
+    ctx.fillText('WDV Book Value', legendX + 22, legendY + 24);
+
+    // Additional metadata info in chart area
+    ctx.font = 'italic 9px -apple-system, Segoe UI, sans-serif';
+    ctx.fillStyle = textColor;
+    ctx.fillText('Salvage Floor', legendX, padding.top + plotHeight - 15);
+    
+    // Draw Salvage Floor dashed line
+    ctx.strokeStyle = isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(220, 38, 38, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, getY(state.salvage));
+    ctx.lineTo(width - padding.right, getY(state.salvage));
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset
+  }
+
+  // ACCORDION FORMULA WRITER
+  function updateFormulaPanel() {
+    const method = state.method;
+    let mathStr = "";
+    let explanationStr = "";
+
+    switch (method) {
+      case 'SLM':
+        if (state.inputMode === 'life') {
+          mathStr = "Annual Depreciation = (Cost - Salvage Value) / Useful Life";
+          explanationStr = "Calculates the depreciation by subtracting the salvage value from the asset cost and dividing it equally over its useful life.<br><br><strong>Key Variables:</strong><br>- <strong>Cost:</strong> Total capitalized purchase price.<br>- <strong>Salvage Value:</strong> Residual scrap worth of the asset.<br>- <strong>Useful Life:</strong> Expected time of asset utility in years.";
+        } else {
+          mathStr = "Annual Depreciation = Cost × Rate%";
+          explanationStr = "Computes depreciation as a flat percentage of the asset's original historical cost annually. Salvage floor clamping is applied automatically to prevent depreciating below residual value.<br><br><strong>Key Variables:</strong><br>- <strong>Cost:</strong> Historic capital value.<br>- <strong>Rate (%):</strong> User-specified yearly percentage.";
+        }
+        break;
+      case 'WDV':
+        if (state.inputMode === 'life') {
+          mathStr = "Rate = 1 - (Salvage / Cost)^(1 / Useful Life)\nAnnual Depreciation = Opening WDV × Rate%";
+          explanationStr = "Also known as Declining Balance. Calculates a constant rate that reduces the asset cost to salvage value over its useful life, then applies it on the opening carrying book value each period. (If Salvage is 0, a nominal floor of 1 is applied for calculations).<br><br><strong>Key Variables:</strong><br>- <strong>Opening WDV:</strong> Written Down Value (carrying book value) at the start of the year.";
+        } else {
+          mathStr = "Annual Depreciation = Opening WDV × Rate%";
+          explanationStr = "Applies a constant annual percentage rate directly to the asset's opening Book Value (Written Down Value) at the beginning of each fiscal period.<br><br><strong>Key Variables:</strong><br>- <strong>Rate (%):</strong> Depreciation rate defined by the user.";
+        }
+        break;
+      case 'DDB':
+        mathStr = "Rate = (2 / Useful Life) × 100\nAnnual Dep = Opening Book Value × Rate%";
+        explanationStr = "An accelerated method that applies double the straight-line rate to the opening book value. Crucially, the system <strong>auto-switches to the Straight-Line Method (SLM)</strong> in later years when the SLM calculation on the remaining life produces a higher charge than the DDB method.";
+        break;
+      case 'SYD':
+        mathStr = "SYD = L × (L + 1) / 2\nAnnual Dep = (Remaining Life / SYD) × (Cost - Salvage)";
+        explanationStr = "Sum of Years Digits is an accelerated depreciation method where the depreciation base (Cost - Salvage) is multiplied by a decreasing fraction. Pro-rata purchases are computed by splitting asset years proportionally across calendar years.";
+        break;
+      case 'UOP':
+        mathStr = "Rate per Unit = (Cost - Salvage) / Total Estimated Units\nAnnual Dep = Units Used in Year × Rate per Unit";
+        explanationStr = "Computes depreciation based on physical usage rather than time. The depreciable base is allocated per unit of output. If total actual units exceed or fall short of total estimated units, depreciation is adjusted in the final year.";
+        break;
+      default:
+        mathStr = "Please select a specific method to view formulas.";
+        explanationStr = "";
+    }
+
+    el.formulaMath.innerHTML = mathStr.replace(/\n/g, '<br>');
+    el.formulaExplanation.innerHTML = explanationStr;
+  }
+
+  // CSV EXPORT ENGINE
+  function exportCSV() {
+    const results = state.results;
+    if (!results || results.length === 0) return;
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    // Check if comparison or single method
+    if (state.method === 'COMPARISON') {
+      csvContent += "Year,SLM Depreciation,SLM Book Value,WDV Depreciation,WDV Book Value\n";
+      const maxYears = Math.max(state.results.length, state.resultsWDV.length);
+      for (let i = 0; i < maxYears; i++) {
+        const sRow = state.results[i] || { depreciation: 0, closing: state.salvage, year: `Year ${i+1}` };
+        const wRow = state.resultsWDV[i] || { depreciation: 0, closing: state.salvage, year: `Year ${i+1}` };
+        const label = state.results[i] ? sRow.year.replace(/,/g, '') : wRow.year.replace(/,/g, '');
+        csvContent += `"${label}",${sRow.depreciation.toFixed(2)},${sRow.closing.toFixed(2)},${wRow.depreciation.toFixed(2)},${wRow.closing.toFixed(2)}\n`;
+      }
+    } else {
+      csvContent += "Year,Opening Book Value,Depreciation,Accumulated Depreciation,Closing Book Value\n";
+      results.forEach(row => {
+        const yearLabel = row.year.replace(/,/g, '');
+        csvContent += `"${yearLabel}",${row.opening.toFixed(2)},${row.depreciation.toFixed(2)},${row.accumulated.toFixed(2)},${row.closing.toFixed(2)}\n`;
+      });
+    }
+
+    // Create Download Link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    const sanitizedAssetName = state.assetName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${sanitizedAssetName}_${state.method}_schedule.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+</script>
+</body>
+</html>
