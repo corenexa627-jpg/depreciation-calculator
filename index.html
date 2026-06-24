@@ -1320,6 +1320,9 @@
     
     // Attach Event Listeners
     setupEventListeners();
+
+    // Auto-calculate initial schedule on page load
+    initializeWithDefaultCalculation();
   });
 
   // THEME MANAGEMENT
@@ -1421,6 +1424,13 @@
         runCalculation();
       }
     }
+  }
+
+  // ─── PATCH: auto-calculate on first load so table is never blank ───────────
+  function initializeWithDefaultCalculation() {
+    // Only runs once at startup (state.results is still empty at this point)
+    runCalculation();
+    updateFormulaPanel();
   }
 
   function setupEventListeners() {
@@ -2425,6 +2435,7 @@
     state.salvage = salvage;
     state.method = method;
     state.currency = el.assetCurrency.value;
+    state.assetName = el.assetName.value.trim() || 'Asset';
 
     let results = [];
 
@@ -2443,10 +2454,28 @@
       });
       state.annualUnits = annualUnits;
       results = calculateUOP(cost, salvage, totalUnits, annualUnits, purchaseDateStr);
+    } else if (method === 'NEP_TAX') {
+      // Nepali Income Tax Act 2058 — Pool WDV method
+      const poolCategory  = el.nepTaxPool.value;
+      const accelerated   = el.nepTaxAccelerated.checked;
+      // Use the dropdown selection (auto-set by date listener) as the period factor
+      const periodMap = { '1': 1.0, '2': 2/3, '3': 1/3 };
+      const periodFactor  = periodMap[el.nepTaxPeriod.value] || 1.0;
+      results = calculateNepaliTax(cost, poolCategory, periodFactor, accelerated, purchaseDateStr);
     }
 
     state.results = results;
-    el.outputTitle.innerText = `Depreciation Schedule (${method})`;
+
+    const methodLabels = {
+      SLM:     state.language === 'np' ? 'सरल रेखा विधि (SLM)'          : 'Straight Line Method (SLM)',
+      WDV:     state.language === 'np' ? 'ह्रासमान मूल्य विधि (WDV)'      : 'Written Down Value (WDV)',
+      DDB:     state.language === 'np' ? 'दोहोरो ह्रासमान विधि (DDB)'     : 'Double Declining Balance (DDB)',
+      SYD:     state.language === 'np' ? 'वर्षका अंकहरूको योग (SYD)'      : 'Sum of Years Digits (SYD)',
+      UOP:     state.language === 'np' ? 'उत्पादन एकाइ विधि (UOP)'        : 'Units of Production (UOP)',
+      NEP_TAX: state.language === 'np' ? 'नेपाली कर ह्रासकट्टी (Pool WDV)' : 'Nepali Tax — Pool WDV (ITA 2058)',
+    };
+    const scheduleWord = state.language === 'np' ? 'ह्रासकट्टी तालिका' : 'Depreciation Schedule';
+    el.outputTitle.innerText = `${scheduleWord} — ${methodLabels[method] || method}`;
     
     // Update summary cards
     renderSummaryCards(cost, salvage, method, life, results);
@@ -2475,7 +2504,9 @@
     state.results = slmResults;
     state.resultsWDV = wdvResults;
 
-    el.outputTitle.innerText = `Depreciation Comparison (SLM vs WDV)`;
+    el.outputTitle.innerText = state.language === 'np'
+      ? 'ह्रासकट्टी तुलना — SLM र WDV'
+      : 'Depreciation Comparison — SLM vs WDV';
 
     // Update Summary cards (using SLM as reference)
     renderSummaryCards(cost, salvage, 'SLM vs WDV', life, slmResults);
@@ -2503,14 +2534,24 @@
 
   // RENDER STANDARD SCHEDULE TABLE
   function renderScheduleTable(results) {
+    const isNp = state.language === 'np';
+    const h = {
+      year:   isNp ? 'वर्ष'                  : 'Year',
+      open:   isNp ? 'सुरुको मौज्दात मूल्य'   : 'Opening Book Value',
+      dep:    isNp ? 'ह्रासकट्टी रकम'         : 'Depreciation',
+      accum:  isNp ? 'कुल ह्रासकट्टी रकम'     : 'Accumulated Depreciation',
+      close:  isNp ? 'अन्तिम मौज्दात मूल्य'   : 'Closing Book Value',
+      total:  isNp ? 'जम्मा'                  : 'TOTAL',
+    };
+
     // Build headers
     el.tableHead.innerHTML = `
       <tr>
-        <th>Year</th>
-        <th class="number">Opening Book Value</th>
-        <th class="number">Depreciation</th>
-        <th class="number">Accumulated Depreciation</th>
-        <th class="number">Closing Book Value</th>
+        <th>${h.year}</th>
+        <th class="number">${h.open}</th>
+        <th class="number">${h.dep}</th>
+        <th class="number">${h.accum}</th>
+        <th class="number">${h.close}</th>
       </tr>
     `;
 
@@ -2539,7 +2580,7 @@
     const totalRow = document.createElement('tr');
     totalRow.classList.add('total-row');
     totalRow.innerHTML = `
-      <td>TOTAL</td>
+      <td>${h.total}</td>
       <td class="number">-</td>
       <td class="number">${formatCurrency(totalDep)}</td>
       <td class="number">${formatCurrency(totalDep)}</td>
@@ -2550,13 +2591,23 @@
 
   // RENDER SIDE-BY-SIDE COMPARISON TABLE
   function renderComparisonTable(slm, wdv) {
+    const isNp = state.language === 'np';
+    const h = {
+      year:    isNp ? 'वर्ष'             : 'Year',
+      slmDep:  isNp ? 'SLM ह्रासकट्टी'  : 'SLM Depreciation',
+      slmBv:   isNp ? 'SLM बाँकी मूल्य' : 'SLM Book Value',
+      wdvDep:  isNp ? 'WDV ह्रासकट्टी'  : 'WDV Depreciation',
+      wdvBv:   isNp ? 'WDV बाँकी मूल्य' : 'WDV Book Value',
+      total:   isNp ? 'जम्मा'            : 'TOTAL',
+    };
+
     el.tableHead.innerHTML = `
       <tr>
-        <th>Year</th>
-        <th class="number">SLM Depreciation</th>
-        <th class="number">SLM Book Value</th>
-        <th class="number">WDV Depreciation</th>
-        <th class="number">WDV Book Value</th>
+        <th>${h.year}</th>
+        <th class="number">${h.slmDep}</th>
+        <th class="number">${h.slmBv}</th>
+        <th class="number">${h.wdvDep}</th>
+        <th class="number">${h.wdvBv}</th>
       </tr>
     `;
 
@@ -2594,7 +2645,7 @@
     const totalRow = document.createElement('tr');
     totalRow.classList.add('total-row');
     totalRow.innerHTML = `
-      <td>TOTAL</td>
+      <td>${h.total}</td>
       <td class="number">${formatCurrency(slmTotal)}</td>
       <td class="number">-</td>
       <td class="number">${formatCurrency(wdvTotal)}</td>
@@ -2854,6 +2905,33 @@
       case 'UOP':
         mathStr = "Rate per Unit = (Cost - Salvage) / Total Estimated Units\nAnnual Dep = Units Used in Year × Rate per Unit";
         explanationStr = "Computes depreciation based on physical usage rather than time. The depreciable base is allocated per unit of output. If total actual units exceed or fall short of total estimated units, depreciation is adjusted in the final year.";
+        break;
+      case 'NEP_TAX':
+        mathStr = "Year 1 Dep = Cost × Period Factor × Pool Rate\nSubsequent Years: Dep = Opening WDV × Pool Rate";
+        explanationStr = "Nepal Income Tax Act 2058 (Pool WDV Method).<br><br>"
+          + "<strong>Pool Rates:</strong><br>"
+          + "- Pool A (Buildings): 5%<br>"
+          + "- Pool B (Computers, Furniture): 25%<br>"
+          + "- Pool C (Vehicles): 20%<br>"
+          + "- Pool D (Machinery &amp; Others): 15%<br>"
+          + "- Pool E (Intangibles): SLM over useful life<br><br>"
+          + "<strong>Period Factors (Year 1 only):</strong><br>"
+          + "- Shrawan–Poush purchase: 100% of cost added<br>"
+          + "- Magh–Chaitra purchase: 2/3 of cost added<br>"
+          + "- Baisakh–Ashadh purchase: 1/3 of cost added<br><br>"
+          + "<strong>Accelerated Depreciation:</strong> Entities qualifying under Section 3(2) "
+          + "(special industry, hydropower, etc.) receive an additional 1/3 of the pool rate.<br><br>"
+          + "<strong>Write-off Rule:</strong> When Opening WDV falls below NPR 2,000 (or equivalent), "
+          + "the entire remaining balance is written off in that year.";
+        break;
+      case 'COMPARISON':
+        mathStr = "SLM: Annual Dep = (Cost - Salvage) / Life\nWDV: Rate = 1 - (Salvage/Cost)^(1/Life)\n      Annual Dep = Opening WDV × Rate%";
+        explanationStr = "This view compares <strong>Straight Line Method (SLM)</strong> and "
+          + "<strong>Written Down Value (WDV)</strong> side by side using the same asset inputs and useful life.<br><br>"
+          + "Key differences:<br>"
+          + "- SLM charges <strong>equal depreciation</strong> each year.<br>"
+          + "- WDV charges <strong>higher depreciation</strong> in early years and lower amounts later.<br>"
+          + "- Both methods converge to the same total depreciable base (Cost − Salvage) by end of life.";
         break;
       default:
         mathStr = "Please select a specific method to view formulas.";
